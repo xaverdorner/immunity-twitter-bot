@@ -70,22 +70,21 @@ def data_preparator(data_frame):
 
 ### function that plots daily vacs vs required vacs
 def vac_plotter(dataframe, result_dict):
-    plt.figure(figsize=(16,9))
-    plt.ylim([0, 450_000])
-    plt.title('Daily vaccinations in Germany & vaccinations required to achieve herd immunity within 5 months')
-    sns.set_style("dark")
+    plt.title('Daily vaccinations in Germany & required daily vaccinations to achieve herd immunity within 5 months')
     plt.xlabel('date')
     plt.ylabel('daily vaccinations')
-    plt.grid(axis='both')
+    plt.grid(axis='y')
     plt.xticks(rotation=-45)
+    plt.text(4.4, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=45, rotation=0,
+             ha="center", va="center",
+             bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
     # find first index with non-zero values
-    frame_len = dataframe.shape[0]
-    first_nonzero = dataframe[dataframe['Zweitimpfung'].ne(0)].shape[0]
+    frame_len = clean_frame.shape[0]
+    first_nonzero = clean_frame[clean_frame['Zweitimpfung'].ne(0)].shape[0]
     start_index = frame_len - first_nonzero
     # plotting the pecentage change
-    # sns.barplot(x=time.iloc[5::2], y=vac_pct_change, palette='Spectral')
-    #bar = sns.barplot(x=dataframe['Datum'].iloc[start_index:].values, y=dataframe['Gesamtzahl verabreichter Impfstoffdosen'].iloc[start_index:].values, color='blue', label='daily vacs')
-    bar = sns.barplot(x=dataframe['Datum'].iloc[start_index:].values, y=dataframe['Zweitimpfung'].iloc[start_index:].values, color='blue', label='daily vacs')
+    # bar = sns.barplot(x=clean_frame['Datum'].iloc[start_index:].values, y=clean_frame['Zweitimpfung'].iloc[start_index:].values, color='blue', label='daily vacs')
+    bar = plt.bar(x=clean_frame['Datum'].iloc[start_index:].values, height=clean_frame['Zweitimpfung'].iloc[start_index:].values, color='blue', label='daily avg. vacs')
     line = plt.axhline(result_dict['sustain_vac_speed'], color="k", linestyle="--", label='required vacs')
     plt.legend()
     plt.savefig('/tmp/daily_vacs.png')
