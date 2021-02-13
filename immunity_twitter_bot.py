@@ -54,7 +54,7 @@ def data_preparator(data_frame):
     rolling_average = data_frame['Zweitimpfung'].rolling(7).mean()
     data_dict['pct_daily_chg'] = rolling_average.pct_change()
     # last value of rolling average of 'Zweitimpfung' vaccinations
-    data_dict['avg_daily_vacs'] = rolling_average.iloc[-1]
+    data_dict['avg_daily_vacs'] = int(rolling_average.iloc[-1])
     # calculate how many prople still need to be vaccinated
     GER_POP = 83_000_000
     # 0.7 * German population needs to be vaccinated for herd immnity
@@ -70,27 +70,29 @@ def data_preparator(data_frame):
 
 ### function that plots daily vacs vs required vacs
 def vac_plotter(dataframe, result_dict):
+    plt.figure(figsize=(16,9))
     plt.title('Daily vaccinations in Germany & required daily vaccinations to achieve herd immunity within 5 months')
     plt.xlabel('date')
     plt.ylabel('daily vaccinations')
+    plot_height = plt.ylim([0, 450_000])
     plt.grid(axis='y')
     plt.xticks(rotation=-45)
     plt.text(4.4, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=45, rotation=0,
              ha="center", va="center",
              bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
     # find first index with non-zero values
-    frame_len = clean_frame.shape[0]
-    first_nonzero = clean_frame[clean_frame['Zweitimpfung'].ne(0)].shape[0]
+    frame_len = dataframe.shape[0]
+    first_nonzero = dataframe[dataframe['Zweitimpfung'].ne(0)].shape[0]
     start_index = frame_len - first_nonzero
     # plotting the pecentage change
     # bar = sns.barplot(x=clean_frame['Datum'].iloc[start_index:].values, y=clean_frame['Zweitimpfung'].iloc[start_index:].values, color='blue', label='daily vacs')
-    bar = plt.bar(x=clean_frame['Datum'].iloc[start_index:].values, height=clean_frame['Zweitimpfung'].iloc[start_index:].values, color='blue', label='daily avg. vacs')
+    bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Zweitimpfung'].iloc[start_index:].values, color='blue', label='daily avg. vacs')
     line = plt.axhline(result_dict['sustain_vac_speed'], color="k", linestyle="--", label='required vacs')
     plt.legend()
     plt.savefig('/tmp/daily_vacs.png')
 
 def twitter_texter(result_dict):
-    twitter_text = f'Vaccination data GER (data: rki.de):\nRequired population for herd immunity (HI) (70% of total): {result_dict["herd_pop"]/1_000_000} Mio.\nImmunity duration (current est.): 5 months\nRequired daily vacs for HI within immunity effect.: {result_dict["sustain_vac_speed"]}\nDays until HI at current speed: {result_dict["days_to_herd"]} days'
+    twitter_text = f'Vaccination projection GERMANY:\nRequired population for herd immunity (HI): {result_dict["herd_pop"]/1_000_000} Mio. (70% of total)\nDaily vacs needed for HI within 5 months: {result_dict["sustain_vac_speed"]}\nCurrent daily vaccinations: {result_dict["avg_daily_vacs"]}\nRemaining time at current speed: {result_dict["days_to_herd"]} days'
     return twitter_text
 
 # a function that posts images to twitter
