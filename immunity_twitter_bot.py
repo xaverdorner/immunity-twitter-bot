@@ -1,8 +1,9 @@
 """
 This is a set of functions for the "days to herd immunity" twitter bot.
 The bot calculates how many days will pass until enough people in Germany are
-vaccinated to have reached herd immunity. It then generates a picture with the amount of days
-and posts that picture to twitter.
+vaccinated to have reached herd immunity. It then generates a graph showing
+average daily vaccinations and the remaining days to herd immunity and
+posts that graph to twitter.
 """
 # imports
 import urllib
@@ -22,11 +23,13 @@ import config
 # download location
 RKI_EXCEL_URL = 'https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Impfquotenmonitoring.xlsx?__blob=publicationFile'
 def file_downloader(url):
+    """function that downloads the vaccination data excel file from RKI and
+    converts it to a pandas dataframe"""
     file = requests.get(url, allow_redirects=True)
-    impffile = pd.read_excel(file.content, sheet_name='Impfungen_proTag') # what do if sheet name changes?
+    impffile = pd.read_excel(file.content, sheet_name='Impfungen_proTag')
     return impffile
 
-# function that cleans a the excel file and outputs a daily vaccination rate
+# function that cleans the dataframe
 def frame_cleaner(data_frame):
     """takes the rki dataframe with daily vaccinations, removes NaNs and zeros and
     outputs a clean data frame"""
@@ -46,7 +49,7 @@ def data_preparator(data_frame):
     containing:
     - population required for German herd immunity
     - immunized population
-    - missiing population for herd immunity
+    - missing population for herd immunity
     - days to herd immunity
     - sustainable vaccination speed to achieve herd immunity
     """
@@ -70,39 +73,40 @@ def data_preparator(data_frame):
 
 ### function that plots daily vacs vs required vacs
 def vac_plotter(dataframe, result_dict):
-    plt.figure(figsize=(16,9))
-    plt.title('Daily vaccinations in Germany & required daily vaccinations to achieve herd immunity within 5 months')
-    plt.xlabel('date')
-    plt.ylabel('daily vaccinations')
+    """generates a plot showing current vaccination numbers
+    and days to herd immunity"""
+    plt.figure(figsize=(8,4.5))
     plot_height = plt.ylim([0, 450_000])
+    plt.title('Daily vaccinations in DE & required speed for herd immunity within 5 mon.')
+    plt.xlabel('DATE')
+    plt.ylabel('DAILY VACCINATIONS')
     plt.grid(axis='y')
     plt.xticks(rotation=-45)
-    plt.text(4.4, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=45, rotation=0,
-             ha="center", va="center",
-             bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
+    plt.text(4.4, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=22, rotation=0,
+            ha="center", va="center",
+            bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
     # find first index with non-zero values
     frame_len = dataframe.shape[0]
     first_nonzero = dataframe[dataframe['Zweitimpfung'].ne(0)].shape[0]
     start_index = frame_len - first_nonzero
-    # plotting the pecentage change
-    # bar = sns.barplot(x=clean_frame['Datum'].iloc[start_index:].values, y=clean_frame['Zweitimpfung'].iloc[start_index:].values, color='blue', label='daily vacs')
-    bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Zweitimpfung'].iloc[start_index:].values, color='blue', label='daily avg. vacs')
-    line = plt.axhline(result_dict['sustain_vac_speed'], color="k", linestyle="--", label='required vacs')
+    bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Zweitimpfung'].iloc[start_index:].values, color='blue', label='avg. daily vacs')
+    line = plt.axhline(result_dict['sustain_vac_speed'], color="r", linestyle="--", label='req. daily vacs')
     plt.legend()
     plt.savefig('/tmp/daily_vacs.png')
 
 def twitter_texter(result_dict):
+    """generates a string using vaccination metrics in the dicctionary
+    from the data preparation function"""
     twitter_text = f'Vaccination projection GERMANY:\nRequired population for herd immunity (HI): {result_dict["herd_pop"]/1_000_000} Mio. (70% of total)\nDaily vacs needed for HI within 5 months: {result_dict["sustain_vac_speed"]}\nCurrent daily vaccinations: {result_dict["avg_daily_vacs"]}\nRemaining time at current speed: {result_dict["days_to_herd"]} days'
     return twitter_text
 
 # a function that posts images to twitter
 def twitter_poster(text):
+    """posts graph and text to twitter as an update"""
     auth = tweepy.OAuthHandler(config.API_KEY, config.API_SECRET_KEY)
     auth.set_access_token(config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)
     api = tweepy.API(auth)
     api.update_with_media('/tmp/daily_vacs.png', status=text)
-    # delete the file so there will always only be one
-    #os.remove("days_to_immunity.jpg")
 
 if __name__ == "__main__":
     try:
