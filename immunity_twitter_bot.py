@@ -75,6 +75,11 @@ def data_preparator(data_frame):
 def vac_plotter(dataframe, result_dict):
     """generates a plot showing current vaccination numbers
     and days to herd immunity"""
+    # find first index with non-zero values
+    frame_len = dataframe.shape[0]
+    first_nonzero = dataframe[dataframe['Zweitimpfung'].ne(0)].shape[0]
+    start_index = frame_len - first_nonzero
+    # creating canvas, axis labels
     plt.figure(figsize=(8,4.5))
     plot_height = plt.ylim([0, 450_000])
     plt.title('Daily vaccinations in DE & required speed for herd immunity within 5 mon.')
@@ -82,13 +87,11 @@ def vac_plotter(dataframe, result_dict):
     plt.ylabel('DAILY VACCINATIONS')
     plt.grid(axis='y')
     plt.xticks(rotation=-45)
-    plt.text(4.4, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=22, rotation=0,
+    # define a relative position for the text on the x axis
+    x_text_pos = len(dataframe['Datum'].iloc[start_index:].values) * 0.175
+    plt.text(x_text_pos, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=22, rotation=0,
             ha="center", va="center",
             bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
-    # find first index with non-zero values
-    frame_len = dataframe.shape[0]
-    first_nonzero = dataframe[dataframe['Zweitimpfung'].ne(0)].shape[0]
-    start_index = frame_len - first_nonzero
     bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Zweitimpfung'].iloc[start_index:].values, color='blue', label='avg. daily vacs')
     line = plt.axhline(result_dict['sustain_vac_speed'], color="r", linestyle="--", label='req. daily vacs')
     plt.legend()
