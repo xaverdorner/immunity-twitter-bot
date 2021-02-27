@@ -81,6 +81,7 @@ def vac_plotter(dataframe, result_dict):
     start_index = frame_len - first_nonzero
     # creating canvas, axis labels
     plt.figure(figsize=(8,4.5))
+    plt.tight_layout()
     plot_height = plt.ylim([0, 450_000])
     plt.title('Daily vaccinations in DE & required speed for herd immunity within 5 mon.')
     plt.xlabel('DATE')
