@@ -31,15 +31,17 @@ def file_downloader(url):
 
 # function that cleans the dataframe
 def frame_cleaner(data_frame):
-    """takes the rki dataframe with daily vaccinations, removes NaNs and zeros and
-    outputs a clean data frame"""
-    na_remove = data_frame.dropna()
-    # remove last line if it isn't a date
-    if type(na_remove.iloc[-1][0]) == str:
-        clean_frame = na_remove.iloc[:-1]
-    else:
-        clean_frame = na_remove
+    """takes the rki dataframe with daily vaccinations, and outputs all entries until
+    the day before today as a clean data frame"""
+    # today usually NaN in RKI data -> last value at yesterday's index
+    yesterday = dt.datetime.today() - dt.timedelta(days=1)
+    # changing string to format in data frame
+    yesterday_clean = yesterday.replace(hour=0, minute=0, second=0,microsecond=0)
+    yesterdays_index = data_frame[data_frame['Datum'] == yesterday_clean].index.values[0]
+    # new frame until today's index is exculding today (which is usually NaN in RKI data)
+    clean_frame = data_frame.iloc[:(yesterdays_index+1)].copy()
     clean_frame.loc[:,'Datum'] = pd.to_datetime(clean_frame.loc[:,'Datum'], yearfirst=True, format='%D.%M.%Y')
+    # adding short date format (day.month)
     clean_frame.loc[:,'Datum'] = clean_frame.loc[:,'Datum'].dt.strftime('%d.%m.')
     return clean_frame
 
