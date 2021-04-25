@@ -38,7 +38,7 @@ def frame_cleaner(data_frame):
     for day in range(7):
         current_day = dt.datetime.today() - dt.timedelta(days=day)
         current_day_clean = current_day.replace(hour=0, minute=0, second=0,microsecond=0)
-        day_index = impffile[impffile['Datum'] == current_day_clean].index.values
+        day_index = data_frame[data_frame['Datum'] == current_day_clean].index.values
         if not len(day_index) == 0:
             first_day_index = day_index[0]
             break
@@ -70,7 +70,7 @@ def data_preparator(data_frame):
     data_dict = {}
     rolling_average = data_frame['Vollständig geimpft'].rolling(7).mean()
     data_dict['pct_daily_chg'] = rolling_average.pct_change()
-    # last value of rolling average of 'Zweitimpfung' vaccinations
+    # last value of rolling average of 'Vollständig geimpft' vaccinations
     data_dict['avg_daily_vacs'] = int(rolling_average.iloc[-1])
     # calculate how many prople still need to be vaccinated
     GER_POP = 83_000_000
@@ -91,7 +91,7 @@ def vac_plotter(dataframe, result_dict):
     and days to herd immunity"""
     # find first index with non-zero values
     frame_len = dataframe.shape[0]
-    first_nonzero = dataframe[dataframe['Zweitimpfung'].ne(0)].shape[0]
+    first_nonzero = dataframe[dataframe['Vollständig geimpft'].ne(0)].shape[0]
     start_index = frame_len - first_nonzero
     # creating canvas, axis labels
     plt.figure(figsize=(8,4.5))
@@ -107,7 +107,7 @@ def vac_plotter(dataframe, result_dict):
     plt.text(x_text_pos, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=22, rotation=0,
             ha="center", va="center",
             bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
-    bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Zweitimpfung'].iloc[start_index:].values, color='blue', label='avg. daily vacs')
+    bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Vollständig geimpft'].iloc[start_index:].values, color='blue', label='avg. daily vacs')
     line = plt.axhline(result_dict['sustain_vac_speed'], color="r", linestyle="--", label='req. daily vacs')
     plt.legend()
     plt.savefig('/tmp/daily_vacs.png')
