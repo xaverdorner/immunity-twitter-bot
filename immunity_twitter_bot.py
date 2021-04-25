@@ -13,11 +13,11 @@ import matplotlib.image as mpimg
 import seaborn as sns
 import xlrd
 import requests
-from datetime import date
-from datetime import datetime
+import datetime as dt
 import os
 import tweepy
 import config
+import logging
 
 # DOWNLOAD AND PROCESSING OF VACCINATION NUMBERS FROM RKI
 # download location
@@ -31,15 +31,24 @@ def file_downloader(url):
 
 # function that cleans the dataframe
 def frame_cleaner(data_frame):
-    """takes the rki dataframe with daily vaccinations, and outputs all entries until
-    the day before today as a clean data frame"""
-    # today usually NaN in RKI data -> last value at yesterday's index
-    yesterday = dt.datetime.today() - dt.timedelta(days=1)
-    # changing string to format in data frame
-    yesterday_clean = yesterday.replace(hour=0, minute=0, second=0,microsecond=0)
-    yesterdays_index = data_frame[data_frame['Datum'] == yesterday_clean].index.values[0]
+    """takes the rki dataframe with daily vaccinations, and outputs all entries 
+    that contain data as a clean data frame"""
+    # Look for first date with data: RKI data usually not for current day, but up to a few days old
+    first_day_index = None
+    for day in range(7):
+        current_day = dt.datetime.today() - dt.timedelta(days=day)
+        current_day_clean = current_day.replace(hour=0, minute=0, second=0,microsecond=0)
+        day_index = impffile[impffile['Datum'] == current_day_clean].index.values
+        if not len(day_index) == 0:
+            first_day_index = day_index[0]
+            break
+        else:
+            pass
+    # check if a value has been found
+    if first_day_index == None:
+        logging.warning('DataFrame contains no usable values in last 7 days')
     # new frame until today's index is exculding today (which is usually NaN in RKI data)
-    clean_frame = data_frame.iloc[:(yesterdays_index+1)].copy()
+    clean_frame = data_frame.iloc[:(first_day_index+1)].copy()
     clean_frame.loc[:,'Datum'] = pd.to_datetime(clean_frame.loc[:,'Datum'], yearfirst=True, format='%D.%M.%Y')
     # adding short date format (day.month)
     clean_frame.loc[:,'Datum'] = clean_frame.loc[:,'Datum'].dt.strftime('%d.%m.')
