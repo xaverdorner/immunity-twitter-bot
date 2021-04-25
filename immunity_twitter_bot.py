@@ -31,7 +31,7 @@ def file_downloader(url):
 
 # function that cleans the dataframe
 def frame_cleaner(data_frame):
-    """takes the rki dataframe with daily vaccinations, and outputs all entries 
+    """takes the rki dataframe with daily vaccinations, and outputs all entries
     that contain data as a clean data frame"""
     # Look for first date with data: RKI data usually not for current day, but up to a few days old
     first_day_index = None
@@ -64,8 +64,11 @@ def data_preparator(data_frame):
     - days to herd immunity
     - sustainable vaccination speed to achieve herd immunity
     """
+    # check and warn if the column name has changed
+    if 'Vollständig geimpft' not in data_frame.columns:
+        logging.warning('Column name in RKI data has changed')
     data_dict = {}
-    rolling_average = data_frame['Zweitimpfung'].rolling(7).mean()
+    rolling_average = data_frame['Vollständig geimpft'].rolling(7).mean()
     data_dict['pct_daily_chg'] = rolling_average.pct_change()
     # last value of rolling average of 'Zweitimpfung' vaccinations
     data_dict['avg_daily_vacs'] = int(rolling_average.iloc[-1])
@@ -73,7 +76,7 @@ def data_preparator(data_frame):
     GER_POP = 83_000_000
     # 0.7 * German population needs to be vaccinated for herd immnity
     data_dict['herd_pop'] = int(GER_POP * 0.7)
-    data_dict['immu_pop'] = int(data_frame['Zweitimpfung'].cumsum().iloc[-1])
+    data_dict['immu_pop'] = int(data_frame['Vollständig geimpft'].cumsum().iloc[-1])
     data_dict['missing_pop'] = int(data_dict['herd_pop'] - data_dict['immu_pop'])
     data_dict['days_to_herd'] = int(data_dict['missing_pop']/data_dict['avg_daily_vacs'])
     avg_days_month = 30.43
