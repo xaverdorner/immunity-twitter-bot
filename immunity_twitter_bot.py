@@ -97,9 +97,9 @@ def vac_plotter(dataframe, result_dict):
     plt.figure(figsize=(8,4.5))
     plt.tight_layout()
     plot_height = plt.ylim([0, 450_000])
-    plt.title('Daily vaccinations in DE & required speed for herd immunity within 5 mon.')
+    plt.title('DAILY IMMUNIZING VACCINATIONS IN GERMANY')
     plt.xlabel('DATE')
-    plt.ylabel('DAILY VACCINATIONS')
+    plt.ylabel('DAILY VACCINATIONS (immunizing dose)')
     plt.grid(axis='y')
     plt.xticks(rotation=-45)
     # define a relative position for the text on the x axis
@@ -107,15 +107,15 @@ def vac_plotter(dataframe, result_dict):
     plt.text(x_text_pos, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=22, rotation=0,
             ha="center", va="center",
             bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
-    bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Vollständig geimpft'].iloc[start_index:].values, color='blue', label='avg. daily vacs')
-    line = plt.axhline(result_dict['sustain_vac_speed'], color="r", linestyle="--", label='req. daily vacs')
+    bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Vollständig geimpft'].iloc[start_index:].values, color='blue', label='avg. immun. vacs/day')
+    line = plt.axhline(result_dict['sustain_vac_speed'], color="r", linestyle="--", label='req. immun. vacs/day')
     plt.legend()
     plt.savefig('/tmp/daily_vacs.png')
 
 def twitter_texter(result_dict):
     """generates a string using vaccination metrics in the dicctionary
     from the data preparation function"""
-    twitter_text = f'Vaccination projection GERMANY:\nRequired population for herd immunity (HI): {result_dict["herd_pop"]/1_000_000} Mio. (70% of total)\nDaily vacs needed for HI within 5 months: {result_dict["sustain_vac_speed"]}\nCurrent daily vaccinations: {result_dict["avg_daily_vacs"]}\nRemaining time at current speed: {result_dict["days_to_herd"]} days'
+    twitter_text = f'Vaccination projection GERMANY:\nRequired population for herd immunity (HI): {result_dict["herd_pop"]/1_000_000} Mio. (70% of total)\nCurrent daily immunizing vaccinations: {result_dict["avg_daily_vacs"]}\nRemaining time at current speed: {result_dict["days_to_herd"]} days'
     return twitter_text
 
 # a function that posts images to twitter
