@@ -10,6 +10,7 @@ import urllib
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from matplotlib.ticker import StrMethodFormatter
 import seaborn as sns
 import xlrd
 import requests
@@ -61,13 +62,15 @@ def data_preparator(data_frame):
     - population required for German herd immunity
     - immunized population
     - missing population for herd immunity
+    - percentage of immunized population
     - days to herd immunity
-    - sustainable vaccination speed to achieve herd immunity
     """
     # check and warn if the column name has changed
     if 'Vollständig geimpft' not in data_frame.columns:
         logging.warning('Column name in RKI data has changed')
     data_dict = {}
+    current_date = data_frame['Datum'].iloc[-1]
+    data_dict['data_as_of'] = current_date
     rolling_average = data_frame['Vollständig geimpft'].rolling(7).mean()
     data_dict['pct_daily_chg'] = rolling_average.pct_change()
     # last value of rolling average of 'Vollständig geimpft' vaccinations
@@ -77,41 +80,45 @@ def data_preparator(data_frame):
     # 0.7 * German population needs to be vaccinated for herd immnity
     data_dict['herd_pop'] = int(GER_POP * 0.7)
     data_dict['immu_pop'] = int(data_frame['Vollständig geimpft'].cumsum().iloc[-1])
+    data_dict['immu_percent'] = int((data_dict['immu_pop']/GER_POP)*100)
+    # calculating still unvaccinated population
     data_dict['missing_pop'] = int(data_dict['herd_pop'] - data_dict['immu_pop'])
     data_dict['days_to_herd'] = int(data_dict['missing_pop']/data_dict['avg_daily_vacs'])
     avg_days_month = 30.43
-    vac_immu_duration = 5*avg_days_month
-    # vaccination speed must be enough to achieve herd immunity before individual immunity wears off
-    data_dict['sustain_vac_speed'] = int(data_dict['herd_pop']/vac_immu_duration)
     return data_dict
 
 ### function that plots daily vacs vs required vacs
 def vac_plotter(dataframe, result_dict):
     """generates a plot showing current vaccination numbers
     and days to herd immunity"""
-    # find first index with non-zero values
-    frame_len = dataframe.shape[0]
-    first_nonzero = dataframe[dataframe['Vollständig geimpft'].ne(0)].shape[0]
-    start_index = frame_len - first_nonzero
-    # creating canvas, axis labels
-    plt.figure(figsize=(8,4.5))
     plt.tight_layout()
-    plot_height = plt.ylim([0, 450_000])
-    # adding "data as of" line to title"
+    fig, ax = plt.subplots(figsize=(8,4.5))
+    # getting plot height by using biggest value in month dataset
+    y_max_value = dataframe['Gesamtzahl verabreichter Impfstoffdosen'].iloc[-30:].max()
+    plot_height = ax.set_ylim([0, y_max_value+100_000])
     current_date = dataframe['Datum'].iloc[-1]
-    plt.title(f'DAILY IMMUNIZING VACCINATIONS IN GERMANY (data as of {current_date})')
-    plt.xlabel('DATE')
-    plt.ylabel('DAILY VACCINATIONS (immunizing dose)')
-    plt.grid(axis='y')
-    plt.xticks(rotation=-45)
-    # define a relative position for the text on the x axis
-    x_text_pos = len(dataframe['Datum'].iloc[start_index:].values) * 0.175
-    plt.text(x_text_pos, plot_height[1]*0.75, f"{result_dict['days_to_herd']} days left", size=22, rotation=0,
-            ha="center", va="center",
-            bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
-    bar = plt.bar(x=dataframe['Datum'].iloc[start_index:].values, height=dataframe['Vollständig geimpft'].iloc[start_index:].values, color='blue', label='avg. immun. vacs/day')
-    line = plt.axhline(result_dict['sustain_vac_speed'], color="r", linestyle="--", label='req. immun. vacs/day')
-    plt.legend()
+    # setting ',' as thousands separator
+    ax.yaxis.set_major_formatter(StrMethodFormatter('{x:,.0f}'))
+    ax.grid(axis='y')
+    ax.title.set_text(f'DAILY VACCINATIONS IN GERMANY (data as of: {current_date})')
+    ax.set_xlabel('DATE')
+    ax.set_ylabel('DAILY VACCINATIONS')
+    # rotate x-axis 45 degrees to for readability
+    ax.tick_params(axis='x', rotation=-45)
+    x_text_pos = len(dataframe['Datum'].iloc[-30:].values) * 0.15
+    ax.text(x_text_pos, plot_height[1]*0.7, f"{result_dict['days_to_herd']} days left", size=22, rotation=0,
+             ha="center", va="center",
+             bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
+    # defining the same x-axis for all elements of the plot
+    xaxis_month_values = dataframe['Datum'].iloc[-30:].values
+    firstdose_values = dataframe['Begonnene Impfserie'].iloc[-30:].values
+    immunized_values = dataframe['Vollständig geimpft'].iloc[-30:].values
+    immunized_bar = ax.bar(x=xaxis_month_values, height=immunized_values, color='#223843', label='immun. vacs/day')
+    firstdose_bar = ax.bar(x=xaxis_month_values, bottom=immunized_values, height=firstdose_values, color='#DBD3D8', label='first dose vacs/day')
+    # using 37 values, to be able to drop 7 Na values and also have 30 in total
+    rolling_average = dataframe['Vollständig geimpft'].iloc[-36:].rolling(7).mean().dropna()
+    average_line = ax.plot(xaxis_month_values, rolling_average, color="red", linewidth=2, linestyle="--", label='immun. vacs/7-day-avg. ')
+    ax.legend()
     plt.savefig('/tmp/daily_vacs.png')
 
 def twitter_texter(result_dict):
