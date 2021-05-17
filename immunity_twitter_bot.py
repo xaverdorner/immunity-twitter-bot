@@ -97,7 +97,9 @@ def vac_plotter(dataframe, result_dict):
     plt.figure(figsize=(8,4.5))
     plt.tight_layout()
     plot_height = plt.ylim([0, 450_000])
-    plt.title('DAILY IMMUNIZING VACCINATIONS IN GERMANY')
+    # adding "data as of" line to title"
+    current_date = dataframe['Datum'].iloc[-1]
+    plt.title(f'DAILY IMMUNIZING VACCINATIONS IN GERMANY (data as of {current_date})')
     plt.xlabel('DATE')
     plt.ylabel('DAILY VACCINATIONS (immunizing dose)')
     plt.grid(axis='y')
