@@ -85,6 +85,24 @@ def data_preparator(data_frame):
     data_dict['missing_pop'] = int(data_dict['herd_pop'] - data_dict['immu_pop'])
     data_dict['days_to_herd'] = int(data_dict['missing_pop']/data_dict['avg_daily_vacs'])
     avg_days_month = 30.43
+    # getting a string to denote which part of the month immunity is achieved
+    target_date = (dt.date.today() + dt.timedelta(days=data_dict['days_to_herd']))
+    target_month = target_date.strftime("%B")
+    target_year = target_date.strftime("%Y")
+    avg_days_month = 30.43
+    # segmenting days in a month in 3 parts
+    month_third = int(avg_days_month//3)
+    # creating 3 ranges for early, mid and late part of the month
+    month_ranges = [range((third + 1) * (month_third)) for third in range(3)]
+    # creating corresponding strings for the ranges
+    month_segments = ['early ', 'mid-', 'late ']
+    # zipping ranges and strings together
+    month_segment_dict = list(zip(month_segments, month_ranges)) # zip can only used once -> to list
+    # extracting the correct string from the month segment dict
+    target_third = [third[0] for third in month_segment_dict if target_date.day in third[1]][0]
+    # stiching all info together for an info string
+    target_month_info_string = target_third+target_month+' '+target_year
+    data_dict['immunity_month_string'] = target_month_info_string
     return data_dict
 
 ### function that plots daily vacs vs required vacs
@@ -124,7 +142,7 @@ def vac_plotter(dataframe, result_dict):
 def twitter_texter(result_dict):
     """generates a string using vaccination metrics in the dicctionary
     from the data preparation function"""
-    twitter_text = f'Vaccination projection GERMANY:\nRequired population for herd immunity (HI): {result_dict["herd_pop"]/1_000_000} Mio. (70% of total)\nCurrent daily immunizing vaccinations: {result_dict["avg_daily_vacs"]}\nRemaining time at current speed: {result_dict["days_to_herd"]} days'
+    twitter_text = f'Vaccination projection GERMANY:\nRequired population for herd immunity (HI): {result_dict["herd_pop"]/1_000_000} Mio. (70% of total)\nCurrent daily immunizing vaccinations: {result_dict["avg_daily_vacs"]}\nRemaining time at current speed: {result_dict["days_to_herd"]} days ({result_dict["immunity_month_string"]})'
     return twitter_text
 
 # a function that posts images to twitter
