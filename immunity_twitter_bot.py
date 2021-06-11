@@ -38,7 +38,7 @@ def frame_cleaner(data_frame):
     first_day_index = None
     for day in range(7):
         current_day = dt.datetime.today() - dt.timedelta(days=day)
-        current_day_clean = current_day.replace(hour=0, minute=0, second=0,microsecond=0)
+        current_day_clean = current_day.strftime('%d.%m.%Y')
         day_index = data_frame[data_frame['Datum'] == current_day_clean].index.values
         if not len(day_index) == 0:
             first_day_index = day_index[0]
@@ -50,7 +50,7 @@ def frame_cleaner(data_frame):
         logging.warning('DataFrame contains no usable values in last 7 days')
     # new frame until today's index is exculding today (which is usually NaN in RKI data)
     clean_frame = data_frame.iloc[:(first_day_index+1)].copy()
-    clean_frame.loc[:,'Datum'] = pd.to_datetime(clean_frame.loc[:,'Datum'], yearfirst=True, format='%D.%M.%Y')
+    clean_frame.loc[:,'Datum'] = pd.to_datetime(clean_frame.loc[:,'Datum'], yearfirst=True, format='%d.%m.%Y')
     # adding short date format (day.month)
     clean_frame.loc[:,'Datum'] = clean_frame.loc[:,'Datum'].dt.strftime('%d.%m.')
     return clean_frame
@@ -66,20 +66,20 @@ def data_preparator(data_frame):
     - days to herd immunity
     """
     # check and warn if the column name has changed
-    if 'Vollständig geimpft' not in data_frame.columns:
+    if 'Zweitimpfung' not in data_frame.columns:
         logging.warning('Column name in RKI data has changed')
     data_dict = {}
     current_date = data_frame['Datum'].iloc[-1]
     data_dict['data_as_of'] = current_date
-    rolling_average = data_frame['Vollständig geimpft'].rolling(7).mean()
+    rolling_average = data_frame['Zweitimpfung'].rolling(7).mean()
     data_dict['pct_daily_chg'] = rolling_average.pct_change()
-    # last value of rolling average of 'Vollständig geimpft' vaccinations
+    # last value of rolling average of 'Zweitimpfung' vaccinations
     data_dict['avg_daily_vacs'] = int(rolling_average.iloc[-1])
     # calculate how many prople still need to be vaccinated
     GER_POP = 83_000_000
     # 0.7 * German population needs to be vaccinated for herd immnity
     data_dict['herd_pop'] = int(GER_POP * 0.7)
-    data_dict['immu_pop'] = int(data_frame['Vollständig geimpft'].cumsum().iloc[-1])
+    data_dict['immu_pop'] = int(data_frame['Zweitimpfung'].cumsum().iloc[-1])
     data_dict['immu_percent'] = int((data_dict['immu_pop']/GER_POP)*100)
     # calculating still unvaccinated population
     data_dict['missing_pop'] = int(data_dict['herd_pop'] - data_dict['immu_pop'])
@@ -129,12 +129,12 @@ def vac_plotter(dataframe, result_dict):
              bbox=dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.9, 0.8)))
     # defining the same x-axis for all elements of the plot
     xaxis_month_values = dataframe['Datum'].iloc[-30:].values
-    firstdose_values = dataframe['Begonnene Impfserie'].iloc[-30:].values
-    immunized_values = dataframe['Vollständig geimpft'].iloc[-30:].values
+    firstdose_values = dataframe['Erstimpfung'].iloc[-30:].values
+    immunized_values = dataframe['Zweitimpfung'].iloc[-30:].values
     immunized_bar = ax.bar(x=xaxis_month_values, height=immunized_values, color='#223843', label='immun. vacs/day')
     firstdose_bar = ax.bar(x=xaxis_month_values, bottom=immunized_values, height=firstdose_values, color='#DBD3D8', label='first dose vacs/day')
     # using 37 values, to be able to drop 7 Na values and also have 30 in total
-    rolling_average = dataframe['Vollständig geimpft'].iloc[-36:].rolling(7).mean().dropna()
+    rolling_average = dataframe['Zweitimpfung'].iloc[-36:].rolling(7).mean().dropna()
     average_line = ax.plot(xaxis_month_values, rolling_average, color="red", linewidth=2, linestyle="--", label='immun. vacs/7-day-avg. ')
     ax.legend()
     plt.savefig('/tmp/daily_vacs.png')
