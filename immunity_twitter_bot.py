@@ -95,7 +95,7 @@ def data_preparator(data_frame):
         # getting the total amount of days in taget month
         last_date_target_month = dt.datetime.date((month_after_target_month - dt.timedelta(days=1)))
         # add one day to include last day of month in iterations
-        days_target_month = last_day_target_month.day + 1
+        days_target_month = last_date_target_month.day + 1
         # segmenting days in a month in 3 parts
         month_third = int(days_target_month//3)
         # creating 3 ranges for early, mid and late part of the month
