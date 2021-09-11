@@ -1,0 +1,20 @@
+# ignore prototyping notebook
+immunity_twitter_bot_prototyping.ipynb
+
+# ignore login tokens
+config.py
+
+# notebook checkpoints
+.ipynb_checkpoints
+
+# pycache
+__pycache__
+
+# temporarily hide txt files
+*.txt
+
+# not uploading the placeholdertext atm
+immunity_text.py
+
+# not including test save .pngs of the graph
+daily_vacs.png

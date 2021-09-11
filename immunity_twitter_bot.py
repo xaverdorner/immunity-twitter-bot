@@ -90,8 +90,10 @@ def data_preparator(data_frame):
     target_month = target_date.strftime("%B")
     target_year = target_date.strftime("%Y")
     if not target_date.day == 31:
-        # getting the month after target month
-        month_after_target_month = dt.datetime(target_date.year, (target_date.month+1),1)
+        #if not target_date.month == 12:
+            month_after_target_month = dt.datetime(target_date.year, (target_date.month+1),1)
+        else:
+            month_after_target_month = dt.datetime(target_date.year,1,1)
         # getting the total amount of days in taget month
         last_date_target_month = dt.datetime.date((month_after_target_month - dt.timedelta(days=1)))
         # add one day to include last day of month in iterations
