@@ -90,7 +90,8 @@ def data_preparator(data_frame):
     target_month = target_date.strftime("%B")
     target_year = target_date.strftime("%Y")
     if not target_date.day == 31:
-        #if not target_date.month == 12:
+        # getting the month after target month
+        if not target_date.month == 12:
             month_after_target_month = dt.datetime(target_date.year, (target_date.month+1),1)
         else:
             month_after_target_month = dt.datetime(target_date.year,1,1)
@@ -158,11 +159,10 @@ def twitter_texter(result_dict):
 
 # a function that posts images to twitter
 def twitter_poster(text):
-    """posts graph and text to twitter as an update"""
     auth = tweepy.OAuthHandler(config.API_KEY, config.API_SECRET_KEY)
     auth.set_access_token(config.ACCESS_TOKEN, config.ACCESS_TOKEN_SECRET)
     api = tweepy.API(auth)
-    api.update_with_media('/tmp/daily_vacs.png', status=text)
+    api.update_status_with_media(text,'/tmp/daily_vacs.png')
 
 if __name__ == "__main__":
     try:
